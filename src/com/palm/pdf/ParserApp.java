@@ -10,6 +10,7 @@ import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy;
 
 /*
+ * TODO fetch all citations in the paper
  * TODO fetch the actual citation to the bibtex
  * TODO parse the authors and paper name from the bibtex
  * TODO ant build file. move articles to resources. create jar
@@ -29,8 +30,8 @@ public class ParserApp {
 		helperPrinter(str, findCitation(str));
 	}
 
-	public static void helperPrinter(String article, List<Integer> bibNums) {
-		for (Integer bibNum : bibNums) {
+	public static void helperPrinter(String article, CitationMetadata citationMetadata) {
+		for (Integer bibNum : citationMetadata.getReferencesUsed()) {
 			System.out.println(retrieveBibtex(article, bibNum));
 		}
 	}
@@ -96,13 +97,14 @@ public class ParserApp {
 	 *             If there are no more citations in the text, given the
 	 *             internal state kept regarding the cursor in the article.
 	 */
-	public static List<Integer> findCitation(String input) throws NoMoreCitationException {
+	public static CitationMetadata findCitation(String input) throws NoMoreCitationException {
 		String[] separators = { "-", "–", "—" };
 
 		while (true) {
-			String result = filterStringSequence(findCitationAux(input), "-\n", "-", "\n");
+			CitationQuote quote = findCitationAux(input);
+			String result = quote.getBibNum();
 			if (isCitation(result)) {
-				return Collections.singletonList(Integer.parseInt(result));
+				return new CitationMetadata(Collections.singletonList(Integer.parseInt(result)), "");
 			}
 
 			for (String sep : separators) {
@@ -115,7 +117,7 @@ public class ParserApp {
 							listResult.add(Integer.parseInt(str.trim()));
 						}
 					}
-					return listResult;
+					return new CitationMetadata(listResult, "");
 				}
 			}
 
@@ -124,12 +126,12 @@ public class ParserApp {
 				for (String str : result.split(",")) {
 					listResult.add(Integer.parseInt(str.trim()));
 				}
-				return listResult;
+				return new CitationMetadata(listResult, "");
 			}
 
 			for (String sep : separators) {
 				if (isMultipleCitation(result, sep)) {
-					return batchCitationNumbers(result, sep);
+					return new CitationMetadata(batchCitationNumbers(result, sep), "");
 				}
 			}
 		}
@@ -158,7 +160,7 @@ public class ParserApp {
 		return listResult;
 	}
 
-	private static String findCitationAux(String input) throws NoMoreCitationException {
+	private static CitationQuote findCitationAux(String input) throws NoMoreCitationException {
 		input = input.substring(lastIdxParsed);
 		int openBracketIdx = input.indexOf('[');
 		if (openBracketIdx == -1) {
@@ -169,7 +171,8 @@ public class ParserApp {
 			throw new NoMoreCitationException();
 		}
 		lastIdxParsed += openBracketIdx + closeBracketIdx;
-		return input.substring(openBracketIdx + 1, openBracketIdx + closeBracketIdx);
+		return new CitationQuote(filterStringSequence(
+				input.substring(openBracketIdx + 1, openBracketIdx + closeBracketIdx), "-\n", "-", "\n"), "");
 	}
 
 	private static int findReferences(String input) {
@@ -191,6 +194,71 @@ public class ParserApp {
 	private static class NoMoreCitationException extends Exception {
 
 		private static final long serialVersionUID = 2063675414353506143L;
+
+	}
+
+	private static class CitationQuote {
+		private String bibNum;
+		private String citation;
+
+		public CitationQuote() {
+		}
+
+		public CitationQuote(String bibNum, String citation) {
+			this.bibNum = bibNum;
+			this.citation = citation;
+		}
+
+		public String getBibNum() {
+			return bibNum;
+		}
+
+		public void setBibNum(String bibNum) {
+			this.bibNum = bibNum;
+		}
+
+		public String getCitation() {
+			return citation;
+		}
+
+		public void setCitation(String citation) {
+			this.citation = citation;
+		}
+
+	}
+
+	private static class CitationMetadata {
+		private List<Integer> referencesUsed;
+		private String citation;
+
+		public CitationMetadata() {
+			this.referencesUsed = new ArrayList<Integer>();
+		}
+
+		public CitationMetadata(List<Integer> referencesUsed, String citation) {
+			this.referencesUsed = referencesUsed;
+			this.citation = citation;
+		}
+
+		public List<Integer> getReferencesUsed() {
+			return referencesUsed;
+		}
+
+		public void setReferencesUsed(List<Integer> referencesUsed) {
+			this.referencesUsed = referencesUsed;
+		}
+
+		public void addReferenceUsed(Integer referenceUsed) {
+			this.referencesUsed.add(referenceUsed);
+		}
+
+		public String getCitation() {
+			return citation;
+		}
+
+		public void setCitation(String citation) {
+			this.citation = citation;
+		}
 
 	}
 }
