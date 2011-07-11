@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project basedir="." default="build" name="citext">
+
+	<property name="src.dir" location="src"/>
+	<property name="res.dir" location="res"/>
+	<property name="build.dir" location="classes"/>
+	<property name="dist.dir" location="dist"/>
+	<property name="lib.dir" location="lib"/>
+	<property name="jar.file" value="${dist.dir}/citext-0.4.jar"/>
+
+	<target name="clean-all" description="Removes any generated files">
+	    <delete dir="${build.dir}"/>
+    	<delete dir="${dist.dir}"/>
+	</target>
+
+	<path id="project.classpath">
+	    <fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+	
+	<target name="prepare" description="Creates necessary directories for the building process">
+		<mkdir dir="${build.dir}"/>
+		<copy todir="${build.dir}">
+			<fileset dir="${res.dir}" >
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="build" depends="prepare" description="Compiles the source code" >
+		<javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="project.classpath" 
+			target="1.6" debug="on" includeantruntime="false"/>
+	</target>
+
+	<target name="jar" depends="build" description="Generates the jar with the jvstm">
+		<mkdir dir="${dist.dir}"/>
+		<jar destfile="${jar.file}" basedir="${build.dir}"/>
+	</target>
+	
+	<target name="run" depends="build" description="Runs the example App" >
+	    <java classname="com.citext.pdf.ParserApp" fork="true">
+	    	<classpath>
+	    		<path refid="project.classpath"/>
+	        	<pathelement path="${build.dir}"/>
+	    	</classpath>          
+	    </java>
+	</target>
+
+</project>

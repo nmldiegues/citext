@@ -1,4 +1,4 @@
-package com.palm.pdf;
+package com.citext.pdf;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,7 +11,6 @@ import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy;
 
 /*
  * TODO parse the authors and paper name from the bibtex
- * TODO ant build file. move articles to resources. create jar
  * TODO refactor to proper classes
  */
 public class ParserApp {
