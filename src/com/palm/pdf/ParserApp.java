@@ -10,8 +10,6 @@ import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy;
 
 /*
- * TODO fetch all citations in the paper
- * TODO fetch the actual citation to the bibtex
  * TODO parse the authors and paper name from the bibtex
  * TODO ant build file. move articles to resources. create jar
  * TODO refactor to proper classes
@@ -23,17 +21,20 @@ public class ParserApp {
 	public static void main(String[] args) throws Exception {
 		String str = readPdf("article2.pdf");
 
-		helperPrinter(str, findCitation(str));
-		helperPrinter(str, findCitation(str));
-		helperPrinter(str, findCitation(str));
-		helperPrinter(str, findCitation(str));
-		helperPrinter(str, findCitation(str));
+		while (true) {
+			try {
+				helperPrinter(str, findCitation(str));
+			} catch (NoMoreCitationException e) {
+				break;
+			}
+		}
 	}
 
 	public static void helperPrinter(String article, CitationMetadata citationMetadata) {
 		for (Integer bibNum : citationMetadata.getReferencesUsed()) {
 			System.out.println(retrieveBibtex(article, bibNum));
 		}
+		System.out.println("\t" + citationMetadata.getCitation() + "\n");
 	}
 
 	public static String readPdf(String fileName) throws IOException {
@@ -58,7 +59,7 @@ public class ParserApp {
 		return input;
 	}
 
-	public static boolean isCitation(String input) {
+	public static boolean isSingleCitation(String input) {
 		try {
 			Integer.parseInt(input.trim());
 		} catch (NumberFormatException e) {
@@ -69,7 +70,7 @@ public class ParserApp {
 
 	public static boolean isMultipleCitation(String input, String separator) {
 		for (String str : input.split(separator)) {
-			if (!isCitation(str)) {
+			if (!isSingleCitation(str)) {
 				return false;
 			}
 		}
@@ -103,8 +104,13 @@ public class ParserApp {
 		while (true) {
 			CitationQuote quote = findCitationAux(input);
 			String result = quote.getBibNum();
-			if (isCitation(result)) {
-				return new CitationMetadata(Collections.singletonList(Integer.parseInt(result)), "");
+			if (isSingleCitation(result)) {
+				CitationMetadata metadata = new CitationMetadata(Collections.singletonList(Integer.parseInt(result)),
+						quote.getCitation());
+				if (isLastCitationFor(input, metadata.getReferencesUsed().get(0))) {
+					continue;
+				}
+				return metadata;
 			}
 
 			for (String sep : separators) {
@@ -117,7 +123,7 @@ public class ParserApp {
 							listResult.add(Integer.parseInt(str.trim()));
 						}
 					}
-					return new CitationMetadata(listResult, "");
+					return new CitationMetadata(listResult, quote.getCitation());
 				}
 			}
 
@@ -126,12 +132,12 @@ public class ParserApp {
 				for (String str : result.split(",")) {
 					listResult.add(Integer.parseInt(str.trim()));
 				}
-				return new CitationMetadata(listResult, "");
+				return new CitationMetadata(listResult, quote.getCitation());
 			}
 
 			for (String sep : separators) {
 				if (isMultipleCitation(result, sep)) {
-					return new CitationMetadata(batchCitationNumbers(result, sep), "");
+					return new CitationMetadata(batchCitationNumbers(result, sep), quote.getCitation());
 				}
 			}
 		}
@@ -160,6 +166,14 @@ public class ParserApp {
 		return listResult;
 	}
 
+	private static boolean isLastCitationFor(String input, Integer bibNum) {
+		input = input.substring(lastIdxParsed);
+		if (input.indexOf("[" + bibNum + "]") == -1) {
+			return true;
+		}
+		return false;
+	}
+
 	private static CitationQuote findCitationAux(String input) throws NoMoreCitationException {
 		input = input.substring(lastIdxParsed);
 		int openBracketIdx = input.indexOf('[');
@@ -171,8 +185,20 @@ public class ParserApp {
 			throw new NoMoreCitationException();
 		}
 		lastIdxParsed += openBracketIdx + closeBracketIdx;
-		return new CitationQuote(filterStringSequence(
+		CitationQuote citation = new CitationQuote(filterStringSequence(
 				input.substring(openBracketIdx + 1, openBracketIdx + closeBracketIdx), "-\n", "-", "\n"), "");
+
+		int citationStartIdx = input.substring(0, openBracketIdx + 1).lastIndexOf('.');
+		while (input.charAt(citationStartIdx) < 'A' || input.charAt(citationStartIdx) > 'Z') {
+			citationStartIdx++;
+		}
+		int citationEndIdx = openBracketIdx + closeBracketIdx
+				+ input.substring(openBracketIdx + closeBracketIdx).indexOf('.');
+
+		citation.setCitation(filterStringSequence(input.substring(citationStartIdx, citationEndIdx + 1), "-\n")
+				.replace('\n', ' '));
+
+		return citation;
 	}
 
 	private static int findReferences(String input) {
