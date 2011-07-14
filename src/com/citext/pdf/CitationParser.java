@@ -14,6 +14,22 @@ public class CitationParser {
 		this.lastIdxParsed = 0;
 	}
 
+	public List<CitationMetadata> fetchAllCitations() {
+		List<CitationMetadata> metadatas = new ArrayList<CitationMetadata>();
+		while (true) {
+			try {
+				CitationMetadata citationMetadata = findNextCitation();
+				for (Integer bibNum : citationMetadata.getBibNums()) {
+					citationMetadata.putReference(bibNum, retrieveBibtex(bibNum));
+				}
+				metadatas.add(citationMetadata);
+			} catch (NoMoreCitationException e) {
+				break;
+			}
+		}
+		return metadatas;
+	}
+
 	public String filterStringSequence(String input, String... seqs) {
 		for (String seq : seqs) {
 			int nextNewLine = -1;
@@ -67,12 +83,11 @@ public class CitationParser {
 		String[] separators = { "-", "–", "—" };
 
 		while (true) {
-			CitationQuote quote = findCitationAux(article);
-			String result = quote.getBibNum();
+			CitationMetadata metadata = findCitationAux(article);
+			String result = metadata.getBibNumsStr();
 			if (isSingleCitation(result)) {
-				CitationMetadata metadata = new CitationMetadata(Collections.singletonList(Integer.parseInt(result)),
-						quote.getCitation());
-				if (isLastCitationFor(article, metadata.getReferencesUsed().get(0))) {
+				metadata.setBibNums(Collections.singletonList(Integer.parseInt(result)));
+				if (isLastCitationFor(article, metadata.getBibNums().get(0))) {
 					continue;
 				}
 				return metadata;
@@ -88,7 +103,8 @@ public class CitationParser {
 							listResult.add(Integer.parseInt(str.trim()));
 						}
 					}
-					return new CitationMetadata(listResult, quote.getCitation());
+					metadata.setBibNums(listResult);
+					return metadata;
 				}
 			}
 
@@ -97,12 +113,14 @@ public class CitationParser {
 				for (String str : result.split(",")) {
 					listResult.add(Integer.parseInt(str.trim()));
 				}
-				return new CitationMetadata(listResult, quote.getCitation());
+				metadata.setBibNums(listResult);
+				return metadata;
 			}
 
 			for (String sep : separators) {
 				if (isMultipleCitation(result, sep)) {
-					return new CitationMetadata(batchCitationNumbers(result, sep), quote.getCitation());
+					metadata.setBibNums(batchCitationNumbers(result, sep));
+					return metadata;
 				}
 			}
 		}
@@ -139,7 +157,7 @@ public class CitationParser {
 		return false;
 	}
 
-	private CitationQuote findCitationAux(String input) throws NoMoreCitationException {
+	private CitationMetadata findCitationAux(String input) throws NoMoreCitationException {
 		input = input.substring(lastIdxParsed);
 		int openBracketIdx = input.indexOf('[');
 		if (openBracketIdx == -1) {
@@ -150,20 +168,26 @@ public class CitationParser {
 			throw new NoMoreCitationException();
 		}
 		lastIdxParsed += openBracketIdx + closeBracketIdx;
-		CitationQuote citation = new CitationQuote(filterStringSequence(
-				input.substring(openBracketIdx + 1, openBracketIdx + closeBracketIdx), "-\n", "-", "\n"), "");
+		String bibNumsStr = filterStringSequence(input.substring(openBracketIdx + 1, openBracketIdx + closeBracketIdx),
+				"-\n", "-", "\n");
 
 		int citationStartIdx = input.substring(0, openBracketIdx + 1).lastIndexOf('.');
-		while (input.charAt(citationStartIdx) < 'A' || input.charAt(citationStartIdx) > 'Z') {
-			citationStartIdx++;
+		if (citationStartIdx == -1) {
+			citationStartIdx = 0;
+		} else {
+			while (input.charAt(citationStartIdx) < 'A' || input.charAt(citationStartIdx) > 'Z') {
+				if (input.charAt(citationStartIdx) >= 'a' && input.charAt(citationStartIdx) <= 'z') {
+					break;
+				}
+				citationStartIdx++;
+			}
 		}
 		int citationEndIdx = openBracketIdx + closeBracketIdx
 				+ input.substring(openBracketIdx + closeBracketIdx).indexOf('.');
+		String citation = filterStringSequence(input.substring(citationStartIdx, citationEndIdx + 1), "-\n").replace(
+				'\n', ' ');
 
-		citation.setCitation(filterStringSequence(input.substring(citationStartIdx, citationEndIdx + 1), "-\n")
-				.replace('\n', ' '));
-
-		return citation;
+		return new CitationMetadata(bibNumsStr, citation);
 	}
 
 	private int findReferences(String input) {
@@ -173,11 +197,21 @@ public class CitationParser {
 	public String retrieveBibtex(Integer bibNum) {
 		String input = article;
 		input = input.substring(findReferences(input));
-		int bibIdx = input.indexOf("[" + bibNum + "]");
-		int endIdx = input.indexOf("[" + (bibNum + 1) + "]");
 
-		if (endIdx == -1) {
-			endIdx = input.length() - 1;
+		int bibIdx = input.indexOf("[" + bibNum + "]");
+		int endIdx = -1;
+
+		if (bibIdx == -1) {
+			bibIdx = input.indexOf(bibNum + ".");
+			endIdx = input.indexOf((bibNum + 1) + ".");
+			if (endIdx == -1) {
+				endIdx = input.length() - 1;
+			}
+		} else {
+			endIdx = input.indexOf("[" + (bibNum + 1) + "]");
+			if (endIdx == -1) {
+				endIdx = input.length() - 1;
+			}
 		}
 
 		return filterStringSequence(input.substring(bibIdx, endIdx), "-\n", "-").replace('\n', ' ');

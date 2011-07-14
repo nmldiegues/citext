@@ -1,5 +1,7 @@
 package com.citext.pdf;
 
+import java.util.Map;
+
 /*
  * TODO parse the authors and paper name from the bibtex
  */
@@ -7,19 +9,15 @@ package com.citext.pdf;
 public class ParserApp {
 
 	public static void main(String[] args) throws Exception {
-		String str = BibUtils.readPdf("article2.pdf");
+		String str = BibUtils.readPdf("article3.pdf");
 		CitationParser parser = new CitationParser(str);
 
-		while (true) {
-			try {
-				CitationMetadata citationMetadata = parser.findNextCitation();
-				for (Integer bibNum : citationMetadata.getReferencesUsed()) {
-					System.out.println(parser.retrieveBibtex(bibNum));
-				}
-				System.out.println("\t" + citationMetadata.getCitation() + "\n");
-			} catch (NoMoreCitationException e) {
-				break;
+		for (CitationMetadata metadata : parser.fetchAllCitations()) {
+			System.out.println("-------------------------");
+			for (Map.Entry<Integer, String> referenceEntry : metadata.getReferences().entrySet()) {
+				System.out.println("[" + referenceEntry.getKey() + "] " + referenceEntry.getValue());
 			}
+			System.out.println("\t" + metadata.getCitation());
 		}
 	}
 

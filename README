@@ -3,3 +3,4 @@ author: Nuno Diegues
 email: nmld@ist.utl.pt
 license: TBD
 date: July 2011
+dependencies: itextpdf-5.1.1

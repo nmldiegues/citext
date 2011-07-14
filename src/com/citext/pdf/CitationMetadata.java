@@ -1,31 +1,51 @@
 package com.citext.pdf;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CitationMetadata {
-	private List<Integer> referencesUsed;
+
+	// "1"
+	private String bibNumsStr;
+
+	// 1
+	private List<Integer> bibNums;
+
+	// In [1] the authors claim that this is good.
 	private String citation;
 
-	public CitationMetadata() {
-		this.referencesUsed = new ArrayList<Integer>();
-	}
+	// 1 -> "E. Author, B. Author and C. Author. In Proceedings"
+	private Map<Integer, String> references;
 
-	public CitationMetadata(List<Integer> referencesUsed, String citation) {
-		this.referencesUsed = referencesUsed;
+	public CitationMetadata(String bibNumsStr, String citation) {
+		this.bibNumsStr = bibNumsStr;
 		this.citation = citation;
+		this.bibNums = new ArrayList<Integer>();
+		this.references = new HashMap<Integer, String>();
 	}
 
-	public List<Integer> getReferencesUsed() {
-		return referencesUsed;
+	public CitationMetadata(List<Integer> bibNums, String citation, Map<Integer, String> references) {
+		this.bibNums = bibNums;
+		this.citation = citation;
+		this.references = references;
 	}
 
-	public void setReferencesUsed(List<Integer> referencesUsed) {
-		this.referencesUsed = referencesUsed;
+	public String getBibNumsStr() {
+		return bibNumsStr;
 	}
 
-	public void addReferenceUsed(Integer referenceUsed) {
-		this.referencesUsed.add(referenceUsed);
+	public void setBibNumsStr(String bibNumsStr) {
+		this.bibNumsStr = bibNumsStr;
+	}
+
+	public List<Integer> getBibNums() {
+		return bibNums;
+	}
+
+	public void setBibNums(List<Integer> bibNums) {
+		this.bibNums = bibNums;
 	}
 
 	public String getCitation() {
@@ -35,4 +55,17 @@ public class CitationMetadata {
 	public void setCitation(String citation) {
 		this.citation = citation;
 	}
+
+	public Map<Integer, String> getReferences() {
+		return references;
+	}
+
+	public void setReferences(Map<Integer, String> references) {
+		this.references = references;
+	}
+
+	public void putReference(Integer bibNum, String reference) {
+		this.references.put(bibNum, reference);
+	}
+
 }
