@@ -182,6 +182,9 @@ public class CitationParser {
 				citationStartIdx++;
 			}
 		}
+		if (citationStartIdx >= openBracketIdx) {
+			citationStartIdx = 0;
+		}
 		int citationEndIdx = openBracketIdx + closeBracketIdx
 				+ input.substring(openBracketIdx + closeBracketIdx).indexOf('.');
 		String citation = filterStringSequence(input.substring(citationStartIdx, citationEndIdx + 1), "-\n").replace(
