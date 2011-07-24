@@ -194,8 +194,8 @@ public class CitationParser {
 	}
 
 	private int findReferences(String input) {
-		int result = input.lastIndexOf("References");
-		return result != -1 ? result : input.lastIndexOf("REFERENCES");
+		int result = input.lastIndexOf("REFERENCES");
+		return result != -1 ? result : input.lastIndexOf("References");
 	}
 
 	public String retrieveBibtex(Integer bibNum) {

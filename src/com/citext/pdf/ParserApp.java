@@ -2,14 +2,10 @@ package com.citext.pdf;
 
 import java.util.Map;
 
-/*
- * TODO parse the authors and paper name from the bibtex
- */
-
 public class ParserApp {
 
 	public static void main(String[] args) throws Exception {
-		String str = BibUtils.readPdf("article3.pdf");
+		String str = BibUtils.readPdf("article6.pdf");
 		CitationParser parser = new CitationParser(str);
 
 		for (CitationMetadata metadata : parser.fetchAllCitations()) {
