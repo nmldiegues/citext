@@ -6,7 +6,7 @@
 	<property name="build.dir" location="classes"/>
 	<property name="dist.dir" location="dist"/>
 	<property name="lib.dir" location="lib"/>
-	<property name="jar.file" value="${dist.dir}/citext-0.9.1.jar"/>
+	<property name="jar.file" value="${dist.dir}/citext-0.9.2.jar"/>
 
 	<target name="clean-all" description="Removes any generated files">
 	    <delete dir="${build.dir}"/>

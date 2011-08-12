@@ -20,7 +20,10 @@ public class CitationParser {
 			try {
 				CitationMetadata citationMetadata = findNextCitation();
 				for (Integer bibNum : citationMetadata.getBibNums()) {
-					citationMetadata.putReference(bibNum, retrieveBibtex(bibNum));
+					String bibTex = retrieveBibtex(bibNum);
+					if (!bibTex.equals("")) {
+						citationMetadata.putReference(bibNum, bibTex);
+					}
 				}
 				metadatas.add(citationMetadata);
 			} catch (NoMoreCitationException e) {
@@ -86,7 +89,7 @@ public class CitationParser {
 			CitationMetadata metadata = findCitationAux(article);
 			String result = metadata.getBibNumsStr();
 			if (isSingleCitation(result)) {
-				metadata.setBibNums(Collections.singletonList(Integer.parseInt(result)));
+				metadata.setBibNums(Collections.singletonList(Integer.parseInt(result.trim())));
 				if (isLastCitationFor(article, metadata.getBibNums().get(0))) {
 					continue;
 				}
@@ -218,7 +221,11 @@ public class CitationParser {
 			}
 		}
 
-		return filterStringSequence(input.substring(bibIdx, endIdx), "-\n", "-").replace('\n', ' ');
+		try {
+			return filterStringSequence(input.substring(bibIdx, endIdx), "-\n", "-").replace('\n', ' ');
+		} catch (StringIndexOutOfBoundsException e) {
+			return "";
+		}
 	}
 
 }

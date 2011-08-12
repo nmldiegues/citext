@@ -5,7 +5,7 @@ import java.util.Map;
 public class ParserApp {
 
 	public static void main(String[] args) throws Exception {
-		String str = BibUtils.readPdf("article6.pdf");
+		String str = BibUtils.readPdf("article.pdf");
 		CitationParser parser = new CitationParser(str);
 
 		for (CitationMetadata metadata : parser.fetchAllCitations()) {
